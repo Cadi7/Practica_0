@@ -1,8 +1,10 @@
 package UI;
 
 import Agent.AdaugaAgentDialog;
+import Agent.EditeazaAgentDialog;
 import Agent.LoadAgenti;
 import Apartament.AdaugaApartamentDialog;
+import Apartament.EditeazaApartamentDialog;
 import Apartament.LoadApartamente;
 import Database.DatabaseManager;
 
@@ -12,9 +14,13 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UI extends JFrame {
-    private DatabaseManager databaseManager;
+    private final DatabaseManager databaseManager;
+    private final JTable apartamenteTable;
+    private final JTable agentiTable;
 
     public UI() {
         databaseManager = new DatabaseManager();
@@ -25,8 +31,8 @@ public class UI extends JFrame {
                 new String[]{"Cod Agent", "Nume", "Prenume", "Varsta", "Telefon"}, 0);
 
         // Creare tabele
-        JTable apartamenteTable = new JTable(apartamenteTableModel);
-        JTable agentiTable = new JTable(agentiTableModel);
+        apartamenteTable = new JTable(apartamenteTableModel);
+        agentiTable = new JTable(agentiTableModel);
 
         // Adăugare modele de tabel la tabele
         apartamenteTable.setModel(apartamenteTableModel);
@@ -38,7 +44,7 @@ public class UI extends JFrame {
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Aplicația Apartamente");
-        setPreferredSize(new Dimension(800, 400));
+        setPreferredSize(new Dimension(900, 400));
 
         // Creare panou principal
         JPanel mainPanel = new JPanel(new GridBagLayout());
@@ -46,7 +52,9 @@ public class UI extends JFrame {
 
         // Creare scroll pane pentru tabelul apartamente
         JScrollPane apartamenteScrollPane = new JScrollPane(apartamenteTable);
-        apartamenteScrollPane.setPreferredSize(new Dimension(450, 400));
+        // Text informativ pentru scroll pane
+        apartamenteScrollPane.setBorder(BorderFactory.createTitledBorder("Apartamente"));
+        apartamenteScrollPane.setPreferredSize(new Dimension(500, 400));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -56,9 +64,11 @@ public class UI extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(apartamenteScrollPane, gbc);
 
-        // Creare scroll pane pentru tabelul agenti
+        // Creare scroll pane pentru tabelul agenți
         JScrollPane agentiScrollPane = new JScrollPane(agentiTable);
-        agentiScrollPane.setPreferredSize(new Dimension(450, 400));
+        // Text informativ pentru scroll pane
+        agentiScrollPane.setBorder(BorderFactory.createTitledBorder("Agenți"));
+        agentiScrollPane.setPreferredSize(new Dimension(400, 400));
         gbc = new GridBagConstraints();
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -68,70 +78,171 @@ public class UI extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(agentiScrollPane, gbc);
 
-        // Creare meniuri
+        // Creare meniu principal
         JMenuBar menuBar = new JMenuBar();
-        JMenu adaugaMenu = new JMenu("Adaugă/Editează");
-        JMenu operatiiMenu = new JMenu("Operații Speciale");
 
-        // Submeniu pentru adăugarea și editarea apartamentelor
-        JMenuItem adaugaApartamentItem = new JMenuItem("Adaugă Apartament");
-        adaugaApartamentItem.addActionListener(e -> {
-            AdaugaApartamentDialog dialog = new AdaugaApartamentDialog(UI.this, databaseManager, apartamenteTable);
-            dialog.setVisible(true);
+        // Meniu "Apartamente"
+        JMenu apartamenteMenu = new JMenu("Apartamente");
+        JMenuItem adaugaApartamentMenuItem = new JMenuItem("Adaugă Apartament");
+        adaugaApartamentMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deschideAdaugaApartamentDialog();
+            }
         });
-        adaugaMenu.add(adaugaApartamentItem);
-
-        // Submeniu pentru adăugarea și editarea agenților
-        JMenuItem adaugaAgentItem = new JMenuItem("Adaugă Agent");
-        adaugaAgentItem.addActionListener(e -> {
-            AdaugaAgentDialog dialog = new AdaugaAgentDialog(UI.this, databaseManager, agentiTable);
-            dialog.setVisible(true);
+        JMenuItem editeazaApartamentMenuItem = new JMenuItem("Editează Apartament");
+        editeazaApartamentMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deschideEditeazaApartamentDialog();
+            }
         });
-        adaugaMenu.add(adaugaAgentItem);
-        LoadAgenti.load(agentiTable);
+        JMenuItem listaPatruCamereEtajeDoiSiTreiMenuItem = new JMenuItem("Listă apartamente 4 camere, etaje 2 și 3");
+        listaPatruCamereEtajeDoiSiTreiMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                afiseazaApartamentePatruCamereEtajeDoiSiTrei();
+            }
+        });
+        apartamenteMenu.add(adaugaApartamentMenuItem);
+        apartamenteMenu.add(editeazaApartamentMenuItem);
+        apartamenteMenu.add(listaPatruCamereEtajeDoiSiTreiMenuItem);
 
-        // Submeniu pentru operațiile speciale
-        JMenuItem apartamentePatruCamereEtajeDoiSiTreiItem = new JMenuItem("Apartamente 4 Camere Etaje 2 și 3");
-        apartamentePatruCamereEtajeDoiSiTreiItem.addActionListener(e -> afiseazaApartamentePatruCamereEtajeDoiSiTrei());
-        operatiiMenu.add(apartamentePatruCamereEtajeDoiSiTreiItem);
+        // Meniu "Agenți"
+        JMenu agentiMenu = new JMenu("Agenți");
+        JMenuItem adaugaAgentMenuItem = new JMenuItem("Adaugă Agent");
+        adaugaAgentMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deschideAdaugaAgentDialog();
+            }
+        });
+        JMenuItem editeazaAgentMenuItem = new JMenuItem("Editează Agent");
+        editeazaAgentMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                deschideEditeazaAgentDialog();
+            }
+        });
+        JMenuItem cautareAgentiVarstaTelefonMenuItem = new JMenuItem("Căutare agenți (20-30 ani)");
+        cautareAgentiVarstaTelefonMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                afiseazaAgentiVarstaTelefon();
+            }
+        });
+        JMenuItem listaAgentiTotalVanzariMenuItem = new JMenuItem("Listă agenți și total vânzări");
+        listaAgentiTotalVanzariMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                afiseazaAgentiTotalVanzari();
+            }
+        });
+        agentiMenu.add(adaugaAgentMenuItem);
+        agentiMenu.add(editeazaAgentMenuItem);
+        agentiMenu.add(cautareAgentiVarstaTelefonMenuItem);
+        agentiMenu.add(listaAgentiTotalVanzariMenuItem);
 
-        JMenuItem agentiTelefonVarstaIntervalItem = new JMenuItem("Agenți Telefon și Vârstă Interval 20-30");
-        agentiTelefonVarstaIntervalItem.addActionListener(e -> afiseazaAgentiTelefonVarstaInterval());
-        operatiiMenu.add(agentiTelefonVarstaIntervalItem);
+        // Adăugare meniuri la bara de meniu
+        menuBar.add(apartamenteMenu);
+        menuBar.add(agentiMenu);
 
-        JMenuItem agentiSumaTotalaVanzariItem = new JMenuItem("Agenți și Suma Totală Vânzări");
-        agentiSumaTotalaVanzariItem.addActionListener(e -> afiseazaAgentiCuSumaTotalaVanzari());
-        operatiiMenu.add(agentiSumaTotalaVanzariItem);
+        JMenuItem refreshMenuItem = new JMenuItem("Refresh database");
+        refreshMenuItem.setHorizontalAlignment(SwingConstants.CENTER);
+        refreshMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                LoadAgenti.load(agentiTable);
+                LoadApartamente.load(apartamenteTable);
+            }
+        });
 
-        menuBar.add(adaugaMenu);
-        menuBar.add(operatiiMenu);
+        menuBar.add(Box.createHorizontalGlue());
+        menuBar.add(new JLabel("   "));
+        menuBar.add(refreshMenuItem);
+
+
+        // Setare bara de meniu
         setJMenuBar(menuBar);
 
-        // Adăugare panoul principal la fereastra
+        // Adăugare panou principal în fereastra
         add(mainPanel);
 
+        // Configurare afișare fereastră
         pack();
         setLocationRelativeTo(null);
     }
 
-    public void afiseazaApartamentePatruCamereEtajeDoiSiTrei() {
-        // ...
+    private void deschideAdaugaApartamentDialog() {
+        AdaugaApartamentDialog dialog = new AdaugaApartamentDialog(UI.this, databaseManager, apartamenteTable);
+        dialog.setVisible(true);
     }
 
-    public void afiseazaAgentiTelefonVarstaInterval() {
-        // ...
+    private void deschideAdaugaAgentDialog() {
+        AdaugaAgentDialog dialog = new AdaugaAgentDialog(UI.this, databaseManager, agentiTable);
+        dialog.setVisible(true);
     }
 
-    public void afiseazaAgentiCuSumaTotalaVanzari() {
-        // ...
+    private void deschideEditeazaApartamentDialog() {
+        int selectedRow = apartamenteTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            EditeazaApartamentDialog dialog = new EditeazaApartamentDialog(UI.this, databaseManager, apartamenteTable, selectedRow);
+            dialog.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(UI.this, "Selectați un apartament pentru a-l edita.", "Eroare", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                UI ui = new UI();
-                ui.setVisible(true);
+    private void deschideEditeazaAgentDialog() {
+        int selectedRow = agentiTable.getSelectedRow();
+        if (selectedRow >= 0) {
+            EditeazaAgentDialog dialog = new EditeazaAgentDialog(UI.this, databaseManager, agentiTable, selectedRow);
+            dialog.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(UI.this, "Selectați un agent pentru a-l edita.", "Eroare", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void afiseazaApartamentePatruCamereEtajeDoiSiTrei() {
+        ResultSet resultSet = databaseManager.getApartamentePatruCamereEtajeDoiSiTrei();
+        String[] columnNames = {"Etaj", "NrCamere", "Pret", "MetriPatrati",};
+        createResultDialog("Apartamente cu 4 camere, etaje 2 și 3", columnNames, resultSet);
+    }
+
+    private void afiseazaAgentiVarstaTelefon() {
+        ResultSet resultSet = databaseManager.getAgentiTelefonVarstaInterval(20, 30);
+        String[] columnNames = {"Nume", "Prenume", "Varsta", "Telefon"};
+        createResultDialog("Agenți cu vârsta între 20 și 30 de ani", columnNames, resultSet);
+    }
+
+    private void afiseazaAgentiTotalVanzari() {
+        ResultSet resultSet = databaseManager.getAgentiCuVanzari();
+        String[] columnNames = {"Nume", "Prenume", "Varsta", "Telefon", "TotalVanzari"};
+        createResultDialog("Agenți și suma totală de vânzări", columnNames, resultSet);
+    }
+
+    private void createResultDialog(String title, String[] columnNames, ResultSet resultSet) {
+        JDialog dialog = new JDialog(UI.this, title, true);
+
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
             }
-        });
+        };
+        JTable resultTable = new JTable(model);
+
+        try {
+            while (resultSet.next()) {
+                Object[] rowData = new Object[columnNames.length];
+                for (int i = 0; i < columnNames.length; i++) {
+                    rowData[i] = resultSet.getString(columnNames[i]);
+                }
+                model.addRow(rowData);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        JScrollPane scrollPane = new JScrollPane(resultTable);
+        dialog.getContentPane().add(scrollPane);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(UI.this);
+        dialog.setVisible(true);
     }
+
+
 }

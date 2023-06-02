@@ -133,6 +133,60 @@ public class DatabaseManager {
         }
         return resultSet;
     }
+    public void actualizeazaApartament(Apartament apartament) {
+        try {
+            Connection connection = getConnection();
+            if (connection != null) {
+                System.out.println("Connected to the database!");
+            }
+
+            PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE Apartamente SET Etaj = ?, NrCamere = ?, Pret = ?, MetriPatrati = ?, CodAgent = ? WHERE CodApartament = ?"
+            );
+            statement.setInt(1, apartament.getEtaj());
+            statement.setInt(2, apartament.getNrCamere());
+            statement.setDouble(3, apartament.getPret());
+            statement.setDouble(4, apartament.getMetriPatrati());
+            statement.setInt(5, apartament.getCodAgent());
+            statement.setInt(6, apartament.getCodApartament());
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("Apartamentul a fost actualizat cu succes!");
+            }
+
+            connection.close();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void actualizeazaAgent(Agent agent) {
+        try {
+            Connection connection = getConnection();
+            if (connection != null) {
+                System.out.println("Connected to the database!");
+            }
+
+            PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE Agenti SET Nume = ?, Prenume = ?, Varsta = ?, Telefon = ? WHERE CodAgent = ?"
+            );
+            statement.setString(1, agent.getNume());
+            statement.setString(2, agent.getPrenume());
+            statement.setInt(3, agent.getVarsta());
+            statement.setString(4, agent.getTelefon());
+            statement.setInt(5, agent.getCodAgent());
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("Agentul a fost actualizat cu succes!");
+            }
+
+            connection.close();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 
     public void closeConnection() {
         try {
